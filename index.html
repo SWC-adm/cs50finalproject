@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bootstrap Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Bootstrap Visualizer</h1>
+    <p>Explore bootstrap sampling distributions and confidence intervals in real time.</p>
+  </header>
+
+  <main>
+    <!-- LEFT: Controls -->
+    <section id="controls">
+      <h2>1. Data generation</h2>
+      <label for="dist-select">Distribution:</label>
+      <select id="dist-select">
+        <option value="lognormal">Skewed (lognormal)</option>
+        <option value="normal">Normal</option>
+        <option value="t">Heavy-tailed (t df = 2)</option>
+        <option value="bimodal">Bimodal</option>
+      </select>
+
+      <label for="n-slider">Sample size: <span id="n-value">50</span></label>
+      <input type="range" id="n-slider" min="10" max="500" value="50" />
+
+      <button id="generate-sample-btn">Generate sample</button>
+
+      <div id="sample-stats">
+        <h3>Sample summary</h3>
+        <p>n = <span id="sample-n">-</span></p>
+        <p>Mean = <span id="sample-mean">-</span></p>
+        <p>Median = <span id="sample-median">-</span></p>
+      </div>
+
+      <hr />
+
+      <h2>2. Bootstrap settings</h2>
+      <p>Statistic: <strong>mean</strong> (for MVP)</p>
+
+      <label for="resamples-input">Run N resamples:</label>
+      <input type="number" id="resamples-input" value="100" min="1" max="10000" />
+
+      <div id="bootstrap-buttons">
+        <button id="step-btn">Step 1 resample</button>
+        <button id="run-many-btn">Run N resamples</button>
+        <button id="auto-start-btn">Auto play</button>
+        <button id="auto-stop-btn">Stop</button>
+        <button id="reset-btn">Reset bootstrap</button>
+      </div>
+    </section>
+
+    <!-- RIGHT: Plots & results -->
+    <section id="visuals">
+      <div class="plot-block">
+        <h2>Original sample</h2>
+        <canvas id="sample-chart"></canvas>
+      </div>
+
+      <div class="plot-block">
+        <h2>Bootstrap distribution of the mean</h2>
+        <canvas id="bootstrap-chart"></canvas>
+      </div>
+
+      <div id="results">
+        <h2>Bootstrap results</h2>
+        <p>Number of resamples: <span id="n-resamples">0</span></p>
+        <p>Bootstrap mean: <span id="boot-mean">-</span></p>
+        <p>Bootstrap SD: <span id="boot-sd">-</span></p>
+        <p>Percentile 95% CI: <span id="boot-ci-percentile">[ -, - ]</span></p>
+        <p>Normal-based 95% CI: <span id="boot-ci-normal">[ -, - ]</span></p>
+
+        <div id="interpretation">
+          <!-- Short explanation text you update from JS -->
+          <p>Generate a sample and start bootstrapping to see explanations here.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
