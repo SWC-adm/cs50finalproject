@@ -1,13 +1,18 @@
+// =======================
 // Global state
+// =======================
 
-// State
-let sample = [];         // original data
-let bootStats = [];      // bootstrap means
-let sampleChart = null;  // Chart.js instance for original sample
-let bootstrapChart = null; // Chart.js instance for bootstrap histogram
-let autoIntervalId = null;
+let sample = [];            // original data
+let bootStats = [];         // bootstrap means
+let sampleChart = null;     // Chart.js instance for original sample
+let bootstrapChart = null;  // Chart.js instance for bootstrap histogram
+let autoIntervalId = null;  // for auto-play
 
+
+// =======================
 // On page load
+// =======================
+
 document.addEventListener("DOMContentLoaded", () => {
   // Wire up event listeners
   document.getElementById("n-slider").addEventListener("input", onNChange);
@@ -22,7 +27,11 @@ document.addEventListener("DOMContentLoaded", () => {
   initCharts();
 });
 
+
+// =======================
 // Data generation
+// =======================
+
 function onNChange(e) {
   const n = e.target.value;
   document.getElementById("n-value").textContent = n;
@@ -60,13 +69,140 @@ function randn() {
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
-// Cheap t(df) via normal / sqrt(chi2/df) if you like, or just say "approximate heavy-tail"
+// Approximate t(df) - good enough for heavy-tail demo
 function randt(df) {
-  // For MVP you can even fake it with normal * big factor or implement properly later.
+  // Simple hack: normal divided by sqrt of uniform-scaled variance
   return randn() / Math.sqrt(Math.random() * (df / (df - 2)));
 }
 
+
+// =======================
+// Histogram helper
+// =======================
+
+// Create histogram data given an array of values and a chosen number of bins
+function makeHistogramData(values, numBins = 20) {
+  if (!values || values.length === 0) {
+    return { bins: [], counts: [] };
+  }
+
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+
+  // Avoid zero width if all values equal
+  if (minVal === maxVal) {
+    const bins = [`${minVal.toFixed(2)}`];
+    const counts = [values.length];
+    return { bins, counts };
+  }
+
+  const binWidth = (maxVal - minVal) / numBins;
+  const bins = [];
+  const counts = new Array(numBins).fill(0);
+
+  // Construct bin labels
+  for (let i = 0; i < numBins; i++) {
+    const left = minVal + i * binWidth;
+    const right = minVal + (i + 1) * binWidth;
+    bins.push(`${left.toFixed(2)} – ${right.toFixed(2)}`);
+  }
+
+  // Count values into bins
+  values.forEach(v => {
+    let idx = Math.floor((v - minVal) / binWidth);
+    if (idx === numBins) idx = numBins - 1; // edge case for max value
+    counts[idx]++;
+  });
+
+  return { bins, counts };
+}
+
+
+// =======================
+// Chart initialization
+// =======================
+
+function initCharts() {
+  const sampleCtx = document.getElementById("sample-chart").getContext("2d");
+  const bootstrapCtx = document.getElementById("bootstrap-chart").getContext("2d");
+
+  sampleChart = new Chart(sampleCtx, {
+    type: "bar",
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Sample values",
+        data: [],
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { maxRotation: 45, minRotation: 45 } },
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  bootstrapChart = new Chart(bootstrapCtx, {
+    type: "bar",
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Bootstrap means",
+        data: [],
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { maxRotation: 45, minRotation: 45 } },
+        y: { beginAtZero: true }
+      }
+    }
+  });
+}
+
+
+// =======================
+// Update charts
+// =======================
+
+function updateSampleChart() {
+  if (!sample || sample.length === 0) {
+    sampleChart.data.labels = [];
+    sampleChart.data.datasets[0].data = [];
+    sampleChart.update();
+    return;
+  }
+
+  const { bins, counts } = makeHistogramData(sample, 20);
+
+  sampleChart.data.labels = bins;
+  sampleChart.data.datasets[0].data = counts;
+  sampleChart.update();
+}
+
+function updateBootstrapChart() {
+  if (!bootStats || bootStats.length === 0) {
+    bootstrapChart.data.labels = [];
+    bootstrapChart.data.datasets[0].data = [];
+    bootstrapChart.update();
+    return;
+  }
+
+  const { bins, counts } = makeHistogramData(bootStats, 20);
+
+  bootstrapChart.data.labels = bins;
+  bootstrapChart.data.datasets[0].data = counts;
+  bootstrapChart.update();
+}
+
+
+// =======================
 // Bootstrap logic
+// =======================
+
 function bootstrapOnce() {
   if (!sample || sample.length === 0) return;
   const n = sample.length;
@@ -94,7 +230,11 @@ function resetBootstrap() {
   updateBootstrapChart();
 }
 
+
+// =======================
 // Auto-play
+// =======================
+
 function startAutoBootstrap() {
   if (autoIntervalId || sample.length === 0) return;
   autoIntervalId = setInterval(() => bootstrapOnce(), 50);
@@ -106,7 +246,11 @@ function stopAutoBootstrap() {
   autoIntervalId = null;
 }
 
+
+// =======================
 // Updating stats and CIs
+// =======================
+
 function updateBootstrapResults() {
   const nResamples = bootStats.length;
   document.getElementById("n-resamples").textContent = nResamples;
@@ -142,6 +286,7 @@ function arrayMean(arr) {
 
 function arraySD(arr) {
   const m = arrayMean(arr);
+  if (arr.length < 2) return 0;
   const varSum = arr.reduce((acc, x) => acc + (x - m) ** 2, 0) / (arr.length - 1);
   return Math.sqrt(varSum);
 }
@@ -152,4 +297,57 @@ function percentileCI(arr, low, high) {
   const loIdx = Math.floor(low * (n - 1));
   const hiIdx = Math.floor(high * (n - 1));
   return [sorted[loIdx], sorted[hiIdx]];
+}
+
+
+// =======================
+// Sample summary & interpretation
+// =======================
+
+function updateSampleSummary() {
+  const n = sample.length;
+  document.getElementById("sample-n").textContent = n;
+
+  if (n === 0) {
+    document.getElementById("sample-mean").textContent = "-";
+    document.getElementById("sample-median").textContent = "-";
+    return;
+  }
+
+  const mean = arrayMean(sample);
+  const sorted = [...sample].sort((a, b) => a - b);
+  const mid = Math.floor(n / 2);
+  let median;
+  if (n % 2 === 0) {
+    median = (sorted[mid - 1] + sorted[mid]) / 2;
+  } else {
+    median = sorted[mid];
+  }
+
+  document.getElementById("sample-mean").textContent = mean.toFixed(3);
+  document.getElementById("sample-median").textContent = median.toFixed(3);
+}
+
+function updateInterpretationText() {
+  const nResamples = bootStats.length;
+  const interpretation = document.getElementById("interpretation");
+
+  if (sample.length === 0) {
+    interpretation.innerHTML = "<p>Generate a sample to get started.</p>";
+    return;
+  }
+
+  if (nResamples === 0) {
+    interpretation.innerHTML =
+      "<p>You have a single sample. Bootstrap will approximate the sampling distribution of the mean by resampling with replacement from this sample.</p>";
+  } else if (nResamples < 30) {
+    interpretation.innerHTML =
+      "<p>With only a few bootstrap resamples, the bootstrap distribution is still rough and the confidence intervals may jump around quite a bit.</p>";
+  } else if (nResamples < 200) {
+    interpretation.innerHTML =
+      "<p>As the number of bootstrap resamples grows, the distribution of bootstrap means starts to stabilize, giving more stable estimates of the mean and its confidence interval.</p>";
+  } else {
+    interpretation.innerHTML =
+      "<p>With many bootstrap resamples, the bootstrap distribution provides a good approximation of the sampling distribution of the mean. Compare the percentile-based and normal-based intervals, especially for skewed data.</p>";
+  }
 }
