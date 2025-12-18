@@ -1,0 +1,76 @@
+/* General body and page styling */
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  margin: 0;
+  background-color: #f5f5f5;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-size: 2em;
+  color: #333;
+}
+
+#controls {
+  margin-bottom: 20px;
+}
+
+label {
+  font-size: 1.1em;
+  margin-right: 10px;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin-top: 5px;
+}
+
+button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+#sample-stats {
+  margin-top: 15px;
+}
+
+/* Flexbox layout for visualizing the histograms */
+#visuals {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;  /* Add space between charts */
+  flex-wrap: wrap;  /* Ensure they stack vertically if the screen is narrow */
+  margin-top: 20px;
+}
+
+.plot-block {
+  width: 48%;  /* Each chart takes up half the screen width */
+  min-width: 300px; /* Prevent charts from getting too small on mobile */
+  height: 350px;  /* Set a consistent height for both charts */
+}
+
+/* Responsive design adjustments for smaller screens */
+@media screen and (max-width: 768px) {
+  #visuals {
+    flex-direction: column;  /* Stack charts vertically on small screens */
+    align-items: center;  /* Center the charts */
+  }
+
+  .plot-block {
+    width: 90%;  /* Make the charts larger on smaller screens */
+  }
+}
