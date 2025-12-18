@@ -53,10 +53,7 @@ function generateSample(dist, n) {
     if (dist === "normal") arr.push(randn());
     else if (dist === "lognormal") arr.push(Math.exp(randn()));
     else if (dist === "t") arr.push(randt(2)); // heavy-tailed
-    else if (dist === "bimodal") {
-      if (Math.random() < 0.5) arr.push(randn() - 2);
-      else arr.push(randn() + 3);
-    }
+    else if (dist === "gamma") arr.push(gamma(2, 2));  // Gamma distribution (shape=2, scale=2)
   }
   return arr;
 }
@@ -75,6 +72,14 @@ function randt(df) {
   return randn() / Math.sqrt(Math.random() * (df / (df - 2)));
 }
 
+// Gamma distribution (shape=2, scale=2) via Inverse Transform Sampling
+function gamma(shape, scale) {
+  // Using Inverse Transform Sampling to generate a Gamma distribution
+  let d1 = Math.random();
+  let d2 = Math.random();
+  let x = Math.sqrt(-2 * Math.log(d1)) * Math.cos(2 * Math.PI * d2);
+  return scale * (shape - 1 + x);  // Scaled to shape=2, scale=2
+}
 
 // =======================
 // Histogram helper
@@ -137,6 +142,7 @@ function initCharts() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,  // This ensures it resizes as the container resizes
       scales: {
         x: { ticks: { maxRotation: 45, minRotation: 45 } },
         y: { beginAtZero: true }
@@ -155,6 +161,7 @@ function initCharts() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,  // This ensures it resizes as the container resizes
       scales: {
         x: { ticks: { maxRotation: 45, minRotation: 45 } },
         y: { beginAtZero: true }
