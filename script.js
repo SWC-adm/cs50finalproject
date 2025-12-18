@@ -76,22 +76,42 @@ function gamma(shape, scale) {
   return scale * (-Math.log(Math.random()) - Math.log(Math.random()));
 }
 
-// Generate t-distribution (df = 2) via standard normal / sqrt(chi-squared/df)
-function randt(df) {
-  if (df < 2) {
-    console.error("Degrees of freedom must be greater than 2 for stability");
-    return 0;
+// Chi-square random variable generator
+function randChiSquare(df) {
+  if (df <= 0) return NaN;
+
+  // Exact shortcut for df = 2: Chi-square(2) ~ -2 * ln(U)
+  if (df === 2) {
+    let u = 0;
+    while (u === 0) u = Math.random(); // avoid log(0)
+    return -2 * Math.log(u);
   }
 
-  // Generate a normal random variable (N(0, 1))
-  const normal = randn();
+  // Generic (simple) method: sum of squares of standard normals
+  // Works fine for small integer df (and is OK for this app).
+  let sum = 0;
+  for (let i = 0; i < Math.floor(df); i++) {
+    const z = randn();
+    sum += z * z;
+  }
 
-  // Generate a chi-squared random variable with df = 2
-  const chiSquared = Math.random() * df;
-
-  // Return the t-distributed variable: standard normal / sqrt(chi-squared / df)
-  return normal / Math.sqrt(chiSquared / df);
+  // If df is not an integer, this ignores the fractional part (fine for MVP).
+  return sum;
 }
+
+// Student t random variable generator: Z / sqrt(ChiSq/df)
+function randt(df) {
+  if (df <= 0) return NaN;
+
+  const z = randn();
+  const chi2 = randChiSquare(df);
+
+  // Avoid division by 0 (extremely rare, but possible if chi2 ~ 0)
+  if (!isFinite(chi2) || chi2 <= 0) return 0;
+
+  return z / Math.sqrt(chi2 / df);
+}
+
 
 // =======================
 // Histogram helper
