@@ -78,7 +78,7 @@ function gamma(shape, scale) {
 
 // Generate t-distribution (df = 2) via standard normal / sqrt(chi-squared/df)
 function randt(df) {
-  if (df <= 2) {
+  if (df = 2) {
     console.error("Degrees of freedom must be greater than 2 for stability");
     return 0;
   }
