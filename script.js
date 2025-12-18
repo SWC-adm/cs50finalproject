@@ -52,7 +52,7 @@ function generateSample(dist, n) {
   for (let i = 0; i < n; i++) {
     if (dist === "normal") arr.push(randn());
     else if (dist === "lognormal") arr.push(Math.exp(randn()));
-    else if (dist === "t") arr.push(randt(2)); // heavy-tailed
+    else if (dist === "t") arr.push(randt(2)); // heavy-tailed t (df=2)
     else if (dist === "gamma") arr.push(gamma(2, 2));  // Gamma distribution (shape=2, scale=2)
   }
   return arr;
@@ -66,19 +66,43 @@ function randn() {
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
-// Approximate t(df) - good enough for heavy-tail demo
+// Approximate t(df) - using Chi-squared distribution for heavy-tail demo
 function randt(df) {
-  // Simple hack: normal divided by sqrt of uniform-scaled variance
-  return randn() / Math.sqrt(Math.random() * (df / (df - 2)));
+  if (df <= 2) {
+    console.error("Degrees of freedom must be greater than 2 for stability");
+    return 0;
+  }
+
+  const normal = randn();  // Standard normal
+  const chiSquared = Math.random() * df;  // Generate a chi-squared random variable
+
+  return normal / Math.sqrt(chiSquared / df); // Return the ratio
 }
 
 // Gamma distribution (shape=2, scale=2) via Inverse Transform Sampling
 function gamma(shape, scale) {
-  // Using Inverse Transform Sampling to generate a Gamma distribution
-  let d1 = Math.random();
-  let d2 = Math.random();
-  let x = Math.sqrt(-2 * Math.log(d1)) * Math.cos(2 * Math.PI * d2);
-  return scale * (shape - 1 + x);  // Scaled to shape=2, scale=2
+  if (shape <= 0 || scale <= 0) {
+    console.error("Invalid parameters for gamma distribution");
+    return 0;
+  }
+  
+  // This uses the Knuth method for generating Gamma values with shape = 2
+  const d = shape - 1 / 3;
+  const c = 1 / Math.sqrt(9 * d);
+  let x, v;
+
+  do {
+    do {
+      x = randn();  // Generate standard normal random variable
+      v = 1 + c * x;
+    } while (v <= 0);  // Reject values that would make the gamma negative
+
+    v = v * v * v;
+    let u = Math.random();
+    if (u < 1 - 0.0331 * x * x * x * x || Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) {
+      return scale * d * v;  // Return scaled value
+    }
+  } while (true);
 }
 
 // =======================
@@ -121,7 +145,6 @@ function makeHistogramData(values, numBins = 20) {
 
   return { bins, counts };
 }
-
 
 // =======================
 // Chart initialization
@@ -170,191 +193,7 @@ function initCharts() {
   });
 }
 
-
 // =======================
 // Update charts
 // =======================
-
-function updateSampleChart() {
-  if (!sample || sample.length === 0) {
-    sampleChart.data.labels = [];
-    sampleChart.data.datasets[0].data = [];
-    sampleChart.update();
-    return;
-  }
-
-  const { bins, counts } = makeHistogramData(sample, 20);
-
-  sampleChart.data.labels = bins;
-  sampleChart.data.datasets[0].data = counts;
-  sampleChart.update();
-}
-
-function updateBootstrapChart() {
-  if (!bootStats || bootStats.length === 0) {
-    bootstrapChart.data.labels = [];
-    bootstrapChart.data.datasets[0].data = [];
-    bootstrapChart.update();
-    return;
-  }
-
-  const { bins, counts } = makeHistogramData(bootStats, 20);
-
-  bootstrapChart.data.labels = bins;
-  bootstrapChart.data.datasets[0].data = counts;
-  bootstrapChart.update();
-}
-
-
-// =======================
-// Bootstrap logic
-// =======================
-
-function bootstrapOnce() {
-  if (!sample || sample.length === 0) return;
-  const n = sample.length;
-  let sum = 0;
-  for (let i = 0; i < n; i++) {
-    const idx = Math.floor(Math.random() * n);
-    sum += sample[idx];
-  }
-  const mean = sum / n;
-  bootStats.push(mean);
-  updateBootstrapResults();
-  updateBootstrapChart();
-}
-
-function onRunMany() {
-  const k = parseInt(document.getElementById("resamples-input").value, 10) || 0;
-  for (let i = 0; i < k; i++) {
-    bootstrapOnce();
-  }
-}
-
-function resetBootstrap() {
-  bootStats = [];
-  updateBootstrapResults();
-  updateBootstrapChart();
-}
-
-
-// =======================
-// Auto-play
-// =======================
-
-function startAutoBootstrap() {
-  if (autoIntervalId || sample.length === 0) return;
-  autoIntervalId = setInterval(() => bootstrapOnce(), 50);
-}
-
-function stopAutoBootstrap() {
-  if (!autoIntervalId) return;
-  clearInterval(autoIntervalId);
-  autoIntervalId = null;
-}
-
-
-// =======================
-// Updating stats and CIs
-// =======================
-
-function updateBootstrapResults() {
-  const nResamples = bootStats.length;
-  document.getElementById("n-resamples").textContent = nResamples;
-
-  if (nResamples === 0) {
-    document.getElementById("boot-mean").textContent = "-";
-    document.getElementById("boot-sd").textContent = "-";
-    document.getElementById("boot-ci-percentile").textContent = "[ -, - ]";
-    document.getElementById("boot-ci-normal").textContent = "[ -, - ]";
-    updateInterpretationText();
-    return;
-  }
-
-  const mean = arrayMean(bootStats);
-  const sd = arraySD(bootStats);
-  const [p2_5, p97_5] = percentileCI(bootStats, 0.025, 0.975);
-  const normalLow = mean - 1.96 * sd;
-  const normalHigh = mean + 1.96 * sd;
-
-  document.getElementById("boot-mean").textContent = mean.toFixed(3);
-  document.getElementById("boot-sd").textContent = sd.toFixed(3);
-  document.getElementById("boot-ci-percentile").textContent =
-    `[ ${p2_5.toFixed(3)}, ${p97_5.toFixed(3)} ]`;
-  document.getElementById("boot-ci-normal").textContent =
-    `[ ${normalLow.toFixed(3)}, ${normalHigh.toFixed(3)} ]`;
-
-  updateInterpretationText();
-}
-
-function arrayMean(arr) {
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
-
-function arraySD(arr) {
-  const m = arrayMean(arr);
-  if (arr.length < 2) return 0;
-  const varSum = arr.reduce((acc, x) => acc + (x - m) ** 2, 0) / (arr.length - 1);
-  return Math.sqrt(varSum);
-}
-
-function percentileCI(arr, low, high) {
-  const sorted = [...arr].sort((a, b) => a - b);
-  const n = sorted.length;
-  const loIdx = Math.floor(low * (n - 1));
-  const hiIdx = Math.floor(high * (n - 1));
-  return [sorted[loIdx], sorted[hiIdx]];
-}
-
-
-// =======================
-// Sample summary & interpretation
-// =======================
-
-function updateSampleSummary() {
-  const n = sample.length;
-  document.getElementById("sample-n").textContent = n;
-
-  if (n === 0) {
-    document.getElementById("sample-mean").textContent = "-";
-    document.getElementById("sample-median").textContent = "-";
-    return;
-  }
-
-  const mean = arrayMean(sample);
-  const sorted = [...sample].sort((a, b) => a - b);
-  const mid = Math.floor(n / 2);
-  let median;
-  if (n % 2 === 0) {
-    median = (sorted[mid - 1] + sorted[mid]) / 2;
-  } else {
-    median = sorted[mid];
-  }
-
-  document.getElementById("sample-mean").textContent = mean.toFixed(3);
-  document.getElementById("sample-median").textContent = median.toFixed(3);
-}
-
-function updateInterpretationText() {
-  const nResamples = bootStats.length;
-  const interpretation = document.getElementById("interpretation");
-
-  if (sample.length === 0) {
-    interpretation.innerHTML = "<p>Generate a sample to get started.</p>";
-    return;
-  }
-
-  if (nResamples === 0) {
-    interpretation.innerHTML =
-      "<p>You have a single sample. Bootstrap will approximate the sampling distribution of the mean by resampling with replacement from this sample.</p>";
-  } else if (nResamples < 30) {
-    interpretation.innerHTML =
-      "<p>With only a few bootstrap resamples, the bootstrap distribution is still rough and the confidence intervals may jump around quite a bit.</p>";
-  } else if (nResamples < 200) {
-    interpretation.innerHTML =
-      "<p>As the number of bootstrap resamples grows, the distribution of bootstrap means starts to stabilize, giving more stable estimates of the mean and its confidence interval.</p>";
-  } else {
-    interpretation.innerHTML =
-      "<p>With many bootstrap resamples, the bootstrap distribution provides a good approximation of the sampling distribution of the mean. Compare the percentile-based and normal-based intervals, especially for skewed data.</p>";
-  }
-}
+...
