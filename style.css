@@ -43,34 +43,104 @@ button:hover {
   background-color: #0056b3;
 }
 
-#sample-stats {
-  margin-top: 15px;
+/* =========================
+   Layout: controls + visuals
+   ========================= */
+
+main {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  align-items: start;
 }
 
-/* Flexbox layout for visualizing the histograms */
+/* Make visuals stack vertically (original on top, bootstraps below) */
 #visuals {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 20px;  /* Add space between charts */
-  flex-wrap: wrap;  /* Ensure they stack vertically if the screen is narrow */
-  margin-top: 20px;
+  flex-direction: column;
+  gap: 16px;
 }
 
+/* Plot blocks */
 .plot-block {
-  width: 48%;  /* Each chart takes up half the screen width */
-  min-width: 300px; /* Prevent charts from getting too small on mobile */
-  height: 350px;  /* Set a consistent height for both charts */
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
 }
 
-/* Responsive design adjustments for smaller screens */
-@media screen and (max-width: 768px) {
-  #visuals {
-    flex-direction: column;  /* Stack charts vertically on small screens */
-    align-items: center;  /* Center the charts */
+/* Original sample takes full width */
+.plot-full {
+  width: 100%;
+  height: 280px; /* adjust as needed */
+}
+
+/* Row holding the two bootstrap plots */
+.plot-row {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Each bootstrap plot takes half */
+.plot-half {
+  flex: 1;
+  min-width: 280px;
+  height: 240px; /* adjust as needed */
+}
+
+/* Make canvas fill its container height */
+.plot-block canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* =========================
+   Results table styling
+   ========================= */
+
+#results {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+#compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+#compare-table th,
+#compare-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  vertical-align: top;
+  font-size: 0.95em;
+}
+
+#compare-table th {
+  background: #f0f0f0;
+  text-align: left;
+}
+
+/* =========================
+   Responsive adjustments
+   ========================= */
+
+@media screen and (max-width: 900px) {
+  main {
+    grid-template-columns: 1fr;
   }
 
-  .plot-block {
-    width: 90%;  /* Make the charts larger on smaller screens */
+  .plot-row {
+    flex-direction: column;
+  }
+
+  .plot-full {
+    height: 260px;
+  }
+
+  .plot-half {
+    height: 240px;
   }
 }
