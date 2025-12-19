@@ -1,13 +1,9 @@
-Below is the **same content**, but rewritten cleanly in **proper Markdown (`.md`) format**, ready to be **pasted directly into `README.md`** with no further edits.
-
----
-
 # Bootstrap Visualizer
 
 ## CS50 Final Project
 
 **Name:** Bootstrap Visualizer
-**Author:** [Your name]
+**Author:** Kaare Bro Wellnitz
 **Course:** CS50x
 **Year:** 2025
 
