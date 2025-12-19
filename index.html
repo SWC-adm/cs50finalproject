@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Bootstrap Visualizer</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -28,16 +27,6 @@
       <input type="range" id="n-slider" min="10" max="500" value="50" />
 
       <button id="generate-sample-btn">Generate sample</button>
-
-      <div id="sample-stats">
-        <h3>Sample summary</h3>
-        <p>n = <span id="sample-n">-</span></p>
-        <p>Mean = <span id="sample-mean">-</span></p>
-        <p>Median = <span id="sample-median">-</span></p>
-        <p>Variance (empirical) = <span id="sample-var">-</span></p>
-        <p>SD (empirical) = <span id="sample-sd">-</span></p>
-        <p>Normal-based 95% CI (mean) = <span id="sample-ci-mean-normal">[ -, - ]</span></p>
-      </div>
 
       <hr />
 
@@ -79,25 +68,56 @@
       </div>
 
       <div id="results">
-        <h2>Bootstrap results</h2>
-        <p>Number of resamples: <span id="n-resamples">0</span></p>
+        <h2>Comparison table</h2>
+        <p>n = <span id="sample-n">-</span> &nbsp; | &nbsp; Resamples = <span id="n-resamples">0</span></p>
 
-        <h3>Mean</h3>
-        <p>Bootstrap mean: <span id="boot-mean">-</span></p>
-        <p>Bootstrap SD: <span id="boot-sd">-</span></p>
-        <p>Percentile 95% CI: <span id="boot-ci-percentile">[ -, - ]</span></p>
-        <p>Normal-based 95% CI: <span id="boot-ci-normal">[ -, - ]</span></p>
-
-        <h3>Variance</h3>
-        <p>Bootstrap mean (variance): <span id="boot-var-mean">-</span></p>
-        <p>Bootstrap SD (variance): <span id="boot-var-sd">-</span></p>
-        <p>Percentile 95% CI: <span id="boot-var-ci-percentile">[ -, - ]</span></p>
-        <p>Normal-based 95% CI: <span id="boot-var-ci-normal">[ -, - ]</span></p>
+        <table id="compare-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Empirical</th>
+              <th>Bootstrap estimate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Mean</td>
+              <td><span id="cmp-mean-emp">-</span></td>
+              <td><span id="cmp-mean-boot">-</span></td>
+            </tr>
+            <tr>
+              <td>Variance</td>
+              <td><span id="cmp-var-emp">-</span></td>
+              <td><span id="cmp-var-boot">-</span></td>
+            </tr>
+            <tr>
+              <td>Normal-based 95% CI (mean)</td>
+              <td><span id="cmp-ci-mean-normal-emp">[ -, - ]</span></td>
+              <td><span id="cmp-ci-mean-normal-boot">[ -, - ]</span></td>
+            </tr>
+            <tr>
+              <td>Normal-based 95% CI (variance)</td>
+              <td><span id="cmp-ci-var-normal-emp">[ -, - ]</span></td>
+              <td><span id="cmp-ci-var-normal-boot">[ -, - ]</span></td>
+            </tr>
+            <tr>
+              <td>Percentile 95% CI (mean)</td>
+              <td><span id="cmp-ci-mean-pct-emp">-</span></td>
+              <td><span id="cmp-ci-mean-pct-boot">[ -, - ]</span></td>
+            </tr>
+            <tr>
+              <td>Percentile 95% CI (variance)</td>
+              <td><span id="cmp-ci-var-pct-emp">-</span></td>
+              <td><span id="cmp-ci-var-pct-boot">[ -, - ]</span></td>
+            </tr>
+          </tbody>
+        </table>
 
         <div id="interpretation">
           <p>Generate a sample and start bootstrapping to see explanations here.</p>
         </div>
       </div>
+
     </section>
   </main>
 
