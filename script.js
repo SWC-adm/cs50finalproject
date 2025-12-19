@@ -2,15 +2,30 @@
 // Global state
 // =======================
 
-let sample = [];               // original data
-let bootMeans = [];            // bootstrap means
-let bootVars = [];             // bootstrap variances (sample variance with n-1)
+let sample = [];
+let bootMeans = [];
+let bootVars = [];
 
-let sampleChart = null;        // Chart.js histogram for original sample
-let bootstrapMeanChart = null; // Chart.js histogram for bootstrap means
-let bootstrapVarChart = null;  // Chart.js histogram for bootstrap variances
+let sampleChart = null;
+let bootstrapMeanChart = null;
+let bootstrapVarChart = null;
 
-let autoIntervalId = null;     // for auto-play
+let autoIntervalId = null;
+
+
+// =======================
+// DOM helpers
+// =======================
+
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function setHTML(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
 
 
 // =======================
@@ -33,27 +48,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 // =======================
-// Small DOM helpers (won't crash if elements not yet in index.html)
-// =======================
-
-function setText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
-
-function setHTML(id, html) {
-  const el = document.getElementById(id);
-  if (el) el.innerHTML = html;
-}
-
-
-// =======================
 // Data generation
 // =======================
 
 function onNChange(e) {
-  const n = e.target.value;
-  setText("n-value", n);
+  setText("n-value", e.target.value);
 }
 
 function onGenerateSample() {
@@ -62,9 +61,9 @@ function onGenerateSample() {
 
   sample = generateSample(dist, n);
 
-  resetBootstrap(); // clears bootMeans + bootVars and updates charts/results
+  resetBootstrap(); // clears bootstrap arrays + updates UI
 
-  updateSampleSummary();
+  updateSampleOutputs();
   updateSampleChart();
 }
 
@@ -73,8 +72,8 @@ function generateSample(dist, n) {
   for (let i = 0; i < n; i++) {
     if (dist === "normal") arr.push(randn());
     else if (dist === "lognormal") arr.push(Math.exp(randn()));
-    else if (dist === "gamma") arr.push(gamma22()); // Gamma(2,2)
-    else arr.push(randn()); // fallback
+    else if (dist === "gamma") arr.push(gamma22());
+    else arr.push(randn());
   }
   return arr;
 }
@@ -87,12 +86,11 @@ function randn() {
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
-// Gamma(2,2): sum of two Exp(rate=1/scale) with scale=2
+// Gamma(2,2) = sum of two Exp(scale=2)
 function gamma22() {
   let u1 = 0, u2 = 0;
   while (u1 === 0) u1 = Math.random();
   while (u2 === 0) u2 = Math.random();
-  // Exp(scale=2): -2 ln(U)
   const e1 = -2 * Math.log(u1);
   const e2 = -2 * Math.log(u2);
   return e1 + e2;
@@ -104,16 +102,12 @@ function gamma22() {
 // =======================
 
 function makeHistogramData(values, numBins = 20) {
-  if (!values || values.length === 0) {
-    return { bins: [], counts: [] };
-  }
+  if (!values || values.length === 0) return { bins: [], counts: [] };
 
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
 
-  if (minVal === maxVal) {
-    return { bins: [`${minVal.toFixed(3)}`], counts: [values.length] };
-  }
+  if (minVal === maxVal) return { bins: [`${minVal.toFixed(3)}`], counts: [values.length] };
 
   const binWidth = (maxVal - minVal) / numBins;
   const bins = [];
@@ -142,7 +136,7 @@ function makeHistogramData(values, numBins = 20) {
 function initCharts() {
   const sampleCanvas = document.getElementById("sample-chart");
   const meanCanvas = document.getElementById("bootstrap-chart");
-  const varCanvas = document.getElementById("bootstrap-var-chart"); // <- add this in index.html
+  const varCanvas = document.getElementById("bootstrap-var-chart");
 
   if (sampleCanvas) {
     sampleChart = new Chart(sampleCanvas.getContext("2d"), {
@@ -238,21 +232,20 @@ function bootstrapOnce() {
   if (!sample || sample.length === 0) return;
 
   const n = sample.length;
-
-  // resample with replacement and compute mean/variance in one pass
   const resample = new Array(n);
+
   for (let i = 0; i < n; i++) {
     const idx = Math.floor(Math.random() * n);
     resample[i] = sample[idx];
   }
 
   const m = arrayMean(resample);
-  const v = arrayVarSample(resample); // sample variance (divide by n-1)
+  const v = arrayVarSample(resample);
 
   bootMeans.push(m);
   bootVars.push(v);
 
-  updateBootstrapResults();
+  updateBootstrapOutputs();
   updateBootstrapMeanChart();
   updateBootstrapVarChart();
 }
@@ -266,7 +259,7 @@ function resetBootstrap() {
   bootMeans = [];
   bootVars = [];
 
-  updateBootstrapResults();
+  updateBootstrapOutputs();
   updateBootstrapMeanChart();
   updateBootstrapVarChart();
 }
@@ -318,100 +311,97 @@ function percentileCI(arr, low, high) {
 
 
 // =======================
-// Sample summary (now includes variance + sd + normal CI for mean)
+// Empirical outputs to table
 // =======================
 
-function updateSampleSummary() {
+function updateSampleOutputs() {
   const n = sample.length;
   setText("sample-n", n);
 
   if (n === 0) {
-    setText("sample-mean", "-");
-    setText("sample-median", "-");
-    setText("sample-var", "-");
-    setText("sample-sd", "-");
-    setText("sample-ci-mean-normal", "[ -, - ]");
+    setText("cmp-mean-emp", "-");
+    setText("cmp-var-emp", "-");
+    setText("cmp-ci-mean-normal-emp", "[ -, - ]");
+    setText("cmp-ci-var-normal-emp", "[ -, - ]");
+    setText("cmp-ci-mean-pct-emp", "-");
+    setText("cmp-ci-var-pct-emp", "-");
     return;
   }
 
   const mean = arrayMean(sample);
-  const sd = arraySDSample(sample);
-  const variance = sd * sd;
+  const variance = arrayVarSample(sample);
+  const sd = Math.sqrt(variance);
 
-  // Normal-based CI for the MEAN using empirical SD
-  const se = sd / Math.sqrt(n);
-  const low = mean - 1.96 * se;
-  const high = mean + 1.96 * se;
+  // Normal-based CI for mean: mean ± 1.96 * (sd/sqrt(n))
+  const seMean = sd / Math.sqrt(n);
+  const meanLo = mean - 1.96 * seMean;
+  const meanHi = mean + 1.96 * seMean;
 
-  // Median
-  const sorted = [...sample].sort((a, b) => a - b);
-  const mid = Math.floor(n / 2);
-  const median = (n % 2 === 0) ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  // Normal-based CI for variance (Wald approximation):
+  // SE(S^2) ≈ S^2 * sqrt(2/(n-1))
+  const seVar = variance * Math.sqrt(2 / (n - 1));
+  const varLo = variance - 1.96 * seVar;
+  const varHi = variance + 1.96 * seVar;
 
-  setText("sample-mean", mean.toFixed(3));
-  setText("sample-median", median.toFixed(3));
-  setText("sample-var", variance.toFixed(3));
-  setText("sample-sd", sd.toFixed(3));
-  setText("sample-ci-mean-normal", `[ ${low.toFixed(3)}, ${high.toFixed(3)} ]`);
+  setText("cmp-mean-emp", mean.toFixed(3));
+  setText("cmp-var-emp", variance.toFixed(3));
+  setText("cmp-ci-mean-normal-emp", `[ ${meanLo.toFixed(3)}, ${meanHi.toFixed(3)} ]`);
+  setText("cmp-ci-var-normal-emp", `[ ${varLo.toFixed(3)}, ${varHi.toFixed(3)} ]`);
+
+  // Percentile CI rows: empirical column should be "-" (already)
+  setText("cmp-ci-mean-pct-emp", "-");
+  setText("cmp-ci-var-pct-emp", "-");
 }
 
 
 // =======================
-// Bootstrap results for MEAN and VARIANCE
+// Bootstrap outputs to table
 // =======================
 
-function updateBootstrapResults() {
+function updateBootstrapOutputs() {
   const B = bootMeans.length;
   setText("n-resamples", B);
 
-  // If nothing yet
   if (B === 0) {
-    // Mean outputs
-    setText("boot-mean", "-");
-    setText("boot-sd", "-");
-    setText("boot-ci-percentile", "[ -, - ]");
-    setText("boot-ci-normal", "[ -, - ]");
-
-    // Variance outputs (new)
-    setText("boot-var-mean", "-");
-    setText("boot-var-sd", "-");
-    setText("boot-var-ci-percentile", "[ -, - ]");
-    setText("boot-var-ci-normal", "[ -, - ]");
-
+    setText("cmp-mean-boot", "-");
+    setText("cmp-var-boot", "-");
+    setText("cmp-ci-mean-normal-boot", "[ -, - ]");
+    setText("cmp-ci-var-normal-boot", "[ -, - ]");
+    setText("cmp-ci-mean-pct-boot", "[ -, - ]");
+    setText("cmp-ci-var-pct-boot", "[ -, - ]");
     updateInterpretationText();
     return;
   }
 
-  // ===== Mean bootstrap summary =====
-  const meanOfMeans = arrayMean(bootMeans);
-  const sdOfMeans = arraySDSample(bootMeans);
+  // Mean bootstrap summary
+  const bootMean = arrayMean(bootMeans);
+  const bootMeanSD = arraySDSample(bootMeans);
   const [mLo, mHi] = percentileCI(bootMeans, 0.025, 0.975);
-  const mNLo = meanOfMeans - 1.96 * sdOfMeans;
-  const mNHi = meanOfMeans + 1.96 * sdOfMeans;
+  const mNLo = bootMean - 1.96 * bootMeanSD;
+  const mNHi = bootMean + 1.96 * bootMeanSD;
 
-  setText("boot-mean", meanOfMeans.toFixed(3));
-  setText("boot-sd", sdOfMeans.toFixed(3));
-  setText("boot-ci-percentile", `[ ${mLo.toFixed(3)}, ${mHi.toFixed(3)} ]`);
-  setText("boot-ci-normal", `[ ${mNLo.toFixed(3)}, ${mNHi.toFixed(3)} ]`);
-
-  // ===== Variance bootstrap summary =====
-  const meanOfVars = arrayMean(bootVars);
-  const sdOfVars = arraySDSample(bootVars);
+  // Variance bootstrap summary
+  const bootVar = arrayMean(bootVars);
+  const bootVarSD = arraySDSample(bootVars);
   const [vLo, vHi] = percentileCI(bootVars, 0.025, 0.975);
-  const vNLo = meanOfVars - 1.96 * sdOfVars;
-  const vNHi = meanOfVars + 1.96 * sdOfVars;
+  const vNLo = bootVar - 1.96 * bootVarSD;
+  const vNHi = bootVar + 1.96 * bootVarSD;
 
-  setText("boot-var-mean", meanOfVars.toFixed(3));
-  setText("boot-var-sd", sdOfVars.toFixed(3));
-  setText("boot-var-ci-percentile", `[ ${vLo.toFixed(3)}, ${vHi.toFixed(3)} ]`);
-  setText("boot-var-ci-normal", `[ ${vNLo.toFixed(3)}, ${vNHi.toFixed(3)} ]`);
+  setText("cmp-mean-boot", bootMean.toFixed(3));
+  setText("cmp-var-boot", bootVar.toFixed(3));
+
+  setText("cmp-ci-mean-normal-boot", `[ ${mNLo.toFixed(3)}, ${mNHi.toFixed(3)} ]`);
+  setText("cmp-ci-var-normal-boot", `[ ${vNLo.toFixed(3)}, ${vNHi.toFixed(3)} ]`);
+
+  setText("cmp-ci-mean-pct-boot", `[ ${mLo.toFixed(3)}, ${mHi.toFixed(3)} ]`);
+  setText("cmp-ci-var-pct-boot", `[ ${vLo.toFixed(3)}, ${vHi.toFixed(3)} ]`);
 
   updateInterpretationText();
 }
 
 
 // =======================
-// Interpretation text (light update)
+// Interpretation text
 // =======================
 
 function updateInterpretationText() {
@@ -428,7 +418,7 @@ function updateInterpretationText() {
     );
   } else if (B < 30) {
     setHTML("interpretation",
-      "<p>With few resamples, both bootstrap histograms are still noisy and intervals may jump around.</p>"
+      "<p>With few resamples, histograms are noisy and intervals can jump around.</p>"
     );
   } else if (B < 200) {
     setHTML("interpretation",
