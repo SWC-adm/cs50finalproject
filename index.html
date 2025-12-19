@@ -21,7 +21,6 @@
       <select id="dist-select">
         <option value="lognormal">Skewed (lognormal)</option>
         <option value="normal">Normal</option>
-        <option value="t">Heavy-tailed (t df = 2)</option>
         <option value="gamma">Gamma (2,2)</option>
       </select>
 
@@ -35,12 +34,15 @@
         <p>n = <span id="sample-n">-</span></p>
         <p>Mean = <span id="sample-mean">-</span></p>
         <p>Median = <span id="sample-median">-</span></p>
+        <p>Variance (empirical) = <span id="sample-var">-</span></p>
+        <p>SD (empirical) = <span id="sample-sd">-</span></p>
+        <p>Normal-based 95% CI (mean) = <span id="sample-ci-mean-normal">[ -, - ]</span></p>
       </div>
 
       <hr />
 
       <h2>2. Bootstrap settings</h2>
-      <p>Statistic: <strong>mean</strong> (for MVP)</p>
+      <p>Statistics: <strong>mean</strong> and <strong>variance</strong></p>
 
       <label for="resamples-input">Run N resamples:</label>
       <input type="number" id="resamples-input" value="100" min="1" max="10000" />
@@ -56,26 +58,43 @@
 
     <!-- RIGHT: Plots & results -->
     <section id="visuals">
-      <div class="plot-block">
+
+      <!-- Original sample (top) -->
+      <div class="plot-block plot-full">
         <h2>Original sample</h2>
         <canvas id="sample-chart"></canvas>
       </div>
 
-      <div class="plot-block">
-        <h2>Bootstrap distribution of the mean</h2>
-        <canvas id="bootstrap-chart"></canvas>
+      <!-- Bootstrap plots (two below) -->
+      <div class="plot-row">
+        <div class="plot-block plot-half">
+          <h2>Bootstrap distribution of the mean</h2>
+          <canvas id="bootstrap-chart"></canvas>
+        </div>
+
+        <div class="plot-block plot-half">
+          <h2>Bootstrap distribution of the variance</h2>
+          <canvas id="bootstrap-var-chart"></canvas>
+        </div>
       </div>
 
       <div id="results">
         <h2>Bootstrap results</h2>
         <p>Number of resamples: <span id="n-resamples">0</span></p>
+
+        <h3>Mean</h3>
         <p>Bootstrap mean: <span id="boot-mean">-</span></p>
         <p>Bootstrap SD: <span id="boot-sd">-</span></p>
         <p>Percentile 95% CI: <span id="boot-ci-percentile">[ -, - ]</span></p>
         <p>Normal-based 95% CI: <span id="boot-ci-normal">[ -, - ]</span></p>
 
+        <h3>Variance</h3>
+        <p>Bootstrap mean (variance): <span id="boot-var-mean">-</span></p>
+        <p>Bootstrap SD (variance): <span id="boot-var-sd">-</span></p>
+        <p>Percentile 95% CI: <span id="boot-var-ci-percentile">[ -, - ]</span></p>
+        <p>Normal-based 95% CI: <span id="boot-var-ci-normal">[ -, - ]</span></p>
+
         <div id="interpretation">
-          <!-- Short explanation text you update from JS -->
           <p>Generate a sample and start bootstrapping to see explanations here.</p>
         </div>
       </div>
