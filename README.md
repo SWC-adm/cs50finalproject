@@ -188,14 +188,9 @@ Future improvements could include:
 
 ## 📜 Acknowledgements
 
+* ChatGPT for help on drafting the code, based on my design and educational choices
 * Chart.js documentation
 * CS50 staff and course materials
 * Statistical bootstrap methods introduced by **Efron & Tibshirani**
 
----
 
-If you want, I can also:
-
-* tighten this to **exactly one page** (some graders prefer that),
-* add a short **“How to use” walkthrough**, or
-* tailor the tone even more closely to **CS50 staff exemplars**.
