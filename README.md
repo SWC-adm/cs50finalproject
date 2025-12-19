@@ -2,6 +2,8 @@
 
 ## CS50 Final Project
 
+#### [Video Demo](https://youtu.be/BHoCT7u9UME) (i.e.,: https://youtu.be/BHoCT7u9UME)
+
 **Name:** Bootstrap Visualizer
 **Author:** Kaare Bro Wellnitz
 **Course:** CS50x
